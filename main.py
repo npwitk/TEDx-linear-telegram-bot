@@ -67,7 +67,9 @@ def send_telegram_message(message, linear_url, content_sheet_url, google_drive_u
         "inline_keyboard": [
             [
                 {"text": "🚀 Open Linear", "url": linear_url},
-                {"text": "📝 Content Sheet", "url": content_sheet_url},
+                {"text": "📝 Content Sheet", "url": content_sheet_url}
+            ],
+            [
                 {"text": "📁 Google Drive", "url": google_drive_url}
             ]
         ]

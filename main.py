@@ -23,7 +23,7 @@ if not all([TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GOOGLE_SHEET_URL, LINEAR_BASE_
 
 @app.route('/')
 def home():
-    return "TEDx Linear Telegram Bot is running kub!!"
+    return "TEDx Linear Telegram Bot is running kub!! 2+2=4"
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -33,36 +33,41 @@ def webhook():
 
         if data.get('type') == 'Issue' and data.get('action') == 'update':
             issue_data = data.get('data', {})
-            old_data = data.get('oldData', {})
 
-            if issue_data.get('state') and old_data.get('state'):
-                new_state_id = issue_data['state']['id']
-                old_state_id = old_data['state']['id']
-                new_state_name = issue_data['state']['name']
-                old_state_name = old_data['state'].get('name', 'Unknown')
+            new_state_info = issue_data.get('state', {})
+            new_state_name = new_state_info.get('name')
+            new_state_id = new_state_info.get('id')
 
-                if new_state_name == 'In Approval' and old_state_name != 'In Approval': # Ensure it just moved to In Approval
-                    issue_title = issue_data.get('title', 'N/A')
-                    issue_identifier = issue_data.get('identifier', 'N/A')
-                    assignee_name = issue_data.get('assignee', {}).get('name', 'Unassigned')
-                    
-                    telegram_message = (
-                        f"งาน <b>{issue_title} ({issue_identifier})</b> ของ {assignee_name} ถูกย้ายไปที่สถานะ <b>In Approval</b> แล้วนะครับ ✨ \n\n"
-                        "📌 ฝากทีม Marketing ช่วยตรวจสอบด้วยนะครับ \n"
-                        "✅ ถ้างานผ่านแล้ว รบกวนย้ายไปที่ Done \n"
-                        f"📝 ถ้ายังไม่ผ่าน รบกวนคอมเมนต์บนงาน <b>{issue_identifier}</b> เพื่อให้ผู้รับงานนำไปปรับแก้ครับ"
-                    )
+            old_state_id_from_updated_from = data.get('updatedFrom', {}).get('stateId')
 
-                    linear_issue_url = f"{LINEAR_BASE_URL}{issue_identifier}"
-                    
-                    send_telegram_message(telegram_message, linear_issue_url, GOOGLE_SHEET_URL, GOOGLE_DRIVE_URL)
+            if (new_state_name == 'In Approval' and
+                old_state_id_from_updated_from is not None and
+                old_state_id_from_updated_from != new_state_id):
+
+                issue_title = issue_data.get('title', 'N/A')
+                issue_identifier = issue_data.get('identifier', 'N/A')
+                assignee_name = issue_data.get('assignee', {}).get('name', 'Unassigned')
+                
+                telegram_message = (
+                    "งาน <b>{issue_title} ({issue_identifier})</b> ของ {assignee_name} ถูกย้ายไปที่สถานะ <b>In Approval</b> แล้วนะครับ ✨ \n\n"
+                    "📌 ฝากทีม Marketing ช่วยตรวจสอบด้วยนะครับ \n"
+                    "✅ ถ้างานผ่านแล้ว รบกวนย้ายไปที่ Done \n"
+                    f"📝 ถ้ายังไม่ผ่าน รบกวนคอมเมนต์บนงาน <b>{issue_identifier}</b> เพื่อให้ผู้รับงานนำไปปรับแก้ครับ"
+                )
+
+                linear_issue_url = f"{LINEAR_BASE_URL}{issue_identifier}"
+                
+                send_telegram_message(telegram_message, linear_issue_url, GOOGLE_SHEET_URL, GOOGLE_DRIVE_URL)
 
         return jsonify({"status": "success"}), 200
     return jsonify({"status": "method not allowed"}), 405
 
+
 def send_telegram_message(message, linear_url, content_sheet_url, google_drive_url):
+    """Sends a message to Telegram with inline URL buttons."""
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
+    # Define the inline keyboard structure with three buttons
     inline_keyboard = {
         "inline_keyboard": [
             [

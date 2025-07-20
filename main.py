@@ -15,15 +15,15 @@ GOOGLE_DRIVE_URL = os.environ.get('GOOGLE_DRIVE_URL')
 
 if not all([TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GOOGLE_SHEET_URL, LINEAR_BASE_URL, GOOGLE_DRIVE_URL]):
     print("Error: One or more critical environment variables are not set.")
-    print(f"TELEGRAM_BOT_TOKEN: {TELEGRAM_BOT_TOKEN is not None}")
-    print(f"TELEGRAM_CHAT_ID: {TELEGRAM_CHAT_ID is not None}")
-    print(f"GOOGLE_SHEET_URL: {GOOGLE_SHEET_URL is not None}")
-    print(f"LINEAR_BASE_URL: {LINEAR_BASE_URL is not None}")
-    print(f"GOOGLE_DRIVE_URL: {GOOGLE_DRIVE_URL is not None}")
+    print(f"TELEGRAM_BOT_TOKEN set: {TELEGRAM_BOT_TOKEN is not None}")
+    print(f"TELEGRAM_CHAT_ID set: {TELEGRAM_CHAT_ID is not None}")
+    print(f"GOOGLE_SHEET_URL set: {GOOGLE_SHEET_URL is not None}")
+    print(f"LINEAR_BASE_URL set: {LINEAR_BASE_URL is not None}")
+    print(f"GOOGLE_DRIVE_URL set: {GOOGLE_DRIVE_URL is not None}")
 
 @app.route('/')
 def home():
-    return "TEDx Linear Telegram Bot is running kub!! 2+2=4"
+    return "TEDx Linear Telegram Bot is running kub!! 3+3=6"
 
 @app.route('/webhook', methods=['POST'])
 def webhook():
@@ -33,6 +33,22 @@ def webhook():
 
         if data.get('type') == 'Issue' and data.get('action') == 'update':
             issue_data = data.get('data', {})
+
+            project_text = ""
+            project_name = None
+
+            if issue_data.get('projectId') is not None or issue_data.get('project') is not None:
+                if issue_data.get('project') and issue_data['project'].get('name'):
+                    project_name = issue_data['project']['name']
+                else:
+                    project_name = "an unnamed project"
+
+                if project_name:
+                    project_text = f"\n\n🚨 งานนี้เป็นส่วนหนึ่งของ Project: <b>{project_name}</b>"
+                    print(f"Issue {issue_data.get('identifier', 'N/A')} is associated with Project: {project_name}.")
+                else:
+                    project_text = "\n\n🚨 งานนี้เป็นส่วนหนึ่งของ Project (ไม่สามารถระบุชื่อได้)"
+                    print(f"Issue {issue_data.get('identifier', 'N/A')} is associated with a project, but name not found.")
 
             new_state_info = issue_data.get('state', {})
             new_state_name = new_state_info.get('name')
@@ -54,6 +70,8 @@ def webhook():
                     "✅ ถ้างานผ่านแล้ว รบกวนย้ายไปที่ Done \n"
                     f"📝 ถ้ายังไม่ผ่าน รบกวนคอมเมนต์บนงาน <b>{issue_identifier}</b> เพื่อให้ผู้รับงานนำไปปรับแก้ครับ"
                 )
+                
+                telegram_message += project_text
 
                 linear_issue_url = f"{LINEAR_BASE_URL}{issue_identifier}"
                 
@@ -67,7 +85,6 @@ def send_telegram_message(message, linear_url, content_sheet_url, google_drive_u
     """Sends a message to Telegram with inline URL buttons."""
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
 
-    # Define the inline keyboard structure with three buttons
     inline_keyboard = {
         "inline_keyboard": [
             [
@@ -93,7 +110,10 @@ def send_telegram_message(message, linear_url, content_sheet_url, google_drive_u
         print("Telegram message with inline keyboard sent successfully.")
     except requests.exceptions.RequestException as e:
         print(f"Error sending Telegram message: {e}")
-        print(f"Response content: {response.text if 'response' in locals() else 'No response'}")
+        if 'response' in locals():
+            print(f"Telegram API Response content: {response.text}")
+        else:
+            print("No response object available.")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 10000)))

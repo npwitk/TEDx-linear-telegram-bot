@@ -34,14 +34,10 @@ APPRECIATION_PHRASES = [
     "Awesome work! 🔥",
     "Fantastic job! 🙌",
     "So proud of you! 🎊",
-    "Excellent execution! 👌",
-    "Rockstar performance! 🤘",
-    "That’s how it’s done! 🧨",
     "Legendary stuff! 🏅",
     "You nailed it! 🔨",
     "You crushed it! 💥",
     "Bravo! 👏",
-    "You’re on fire! 🔥",
     "100% Approved! ✅",
     "Keep being amazing! 💫"
 ]

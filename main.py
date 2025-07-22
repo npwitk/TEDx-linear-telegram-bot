@@ -56,14 +56,14 @@ def webhook():
 
             old_state_id_from_updated_from = data.get('updatedFrom', {}).get('stateId')
 
+            issue_identifier = issue_data.get('identifier', 'N/A')
+            assignee_name = issue_data.get('assignee', {}).get('name', 'Unassigned')
+            linear_issue_url = f"{LINEAR_BASE_URL}{issue_identifier}"
+
             if (new_state_name == 'In Approval' and
                 old_state_id_from_updated_from is not None and
                 old_state_id_from_updated_from != new_state_id):
 
-                issue_title = issue_data.get('title', 'N/A')
-                issue_identifier = issue_data.get('identifier', 'N/A')
-                assignee_name = issue_data.get('assignee', {}).get('name', 'Unassigned')
-                
                 telegram_message = (
                     f"งาน <b>{issue_title} ({issue_identifier})</b> ของ {assignee_name} ถูกย้ายไปที่สถานะ <b>In Approval</b> แล้วนะครับ ✨ \n\n"
                     "📌 ฝากทีม Marketing ช่วยตรวจสอบด้วยนะครับ \n"
@@ -73,41 +73,50 @@ def webhook():
                 
                 telegram_message += project_text
 
-                linear_issue_url = f"{LINEAR_BASE_URL}{issue_identifier}"
-                
-                send_telegram_message(telegram_message, linear_issue_url, GOOGLE_SHEET_URL, GOOGLE_DRIVE_URL)
+                send_telegram_message(telegram_message, linear_issue_url, GOOGLE_SHEET_URL, GOOGLE_DRIVE_URL, include_inline_keyboard=True)
+                print(f"Sent Telegram notification for 'In Approval' transition for {issue_identifier}.")
+
+            if (new_state_name == 'Done'):
+                telegram_message = (
+                    f"🎉 งาน <b>{issue_title} ({issue_identifier})</b> ของ {assignee_name} ถูก <b>Approved</b> เป็นเรียบร้อยแล้ว!\n"
+                    "เยี่ยมมากกกก! ✨"
+                )
+                telegram_message += project_text
+
+                send_telegram_message(telegram_message, linear_issue_url, GOOGLE_SHEET_URL, GOOGLE_DRIVE_URL, include_inline_keyboard=False)
+                print(f"Sent Telegram notification for 'Done' transition for {issue_identifier}.")
 
         return jsonify({"status": "success"}), 200
     return jsonify({"status": "method not allowed"}), 405
 
 
-def send_telegram_message(message, linear_url, content_sheet_url, google_drive_url):
-    """Sends a message to Telegram with inline URL buttons."""
+def send_telegram_message(message, linear_url, content_sheet_url, google_drive_url, include_inline_keyboard=True):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
-
-    inline_keyboard = {
-        "inline_keyboard": [
-            [
-                {"text": "🚀 Open Linear", "url": linear_url},
-                {"text": "📝 Content Sheet", "url": content_sheet_url}
-            ],
-            [
-                {"text": "📁 Google Drive", "url": google_drive_url}
-            ]
-        ]
-    }
 
     payload = {
         'chat_id': TELEGRAM_CHAT_ID,
         'text': message,
         'parse_mode': 'HTML',
-        'reply_markup': inline_keyboard
     }
+    
+    if include_inline_keyboard:
+        inline_keyboard = {
+            "inline_keyboard": [
+                [
+                    {"text": "🚀 Open Linear", "url": linear_url},
+                    {"text": "📝 Content Sheet", "url": content_sheet_url}
+                ],
+                [
+                    {"text": "📁 Google Drive", "url": google_drive_url}
+                ]
+            ]
+        }
+        payload['reply_markup'] = inline_keyboard
     
     try:
         response = requests.post(url, json=payload)
         response.raise_for_status()
-        print("Telegram message with inline keyboard sent successfully.")
+        print("Telegram message sent successfully.")
     except requests.exceptions.RequestException as e:
         print(f"Error sending Telegram message: {e}")
         if 'response' in locals():

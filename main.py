@@ -56,6 +56,7 @@ def webhook():
 
             old_state_id_from_updated_from = data.get('updatedFrom', {}).get('stateId')
 
+            issue_title = issue_data.get('title', 'N/A')
             issue_identifier = issue_data.get('identifier', 'N/A')
             assignee_name = issue_data.get('assignee', {}).get('name', 'Unassigned')
             linear_issue_url = f"{LINEAR_BASE_URL}{issue_identifier}"

@@ -1,6 +1,7 @@
 from flask import Flask, request, jsonify
 import requests
 import os
+import random
 
 app = Flask(__name__)
 
@@ -20,6 +21,31 @@ if not all([TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, GOOGLE_SHEET_URL, LINEAR_BASE_
     print(f"GOOGLE_SHEET_URL set: {GOOGLE_SHEET_URL is not None}")
     print(f"LINEAR_BASE_URL set: {LINEAR_BASE_URL is not None}")
     print(f"GOOGLE_DRIVE_URL set: {GOOGLE_DRIVE_URL is not None}")
+
+APPRECIATION_PHRASES = [
+    "เยี่ยมมากกกก! ✨",
+    "สุดยอดไปเลย! 🎉",
+    "ยอดเยี่ยมกระเทียมเจียว! 💡",
+    "โคตรเจ๋งงง! 🔥",
+    "เก่งมาก ๆ ๆ ๆ ๆ!",
+    "ผลงานระดับ Masterpiece! 🖼️",
+    "Perfect ไปเลยจ้าา 💯",
+    "เทพสุด ๆ ไปเลย! 🧙‍♂️",   
+    "Awesome work! 🔥",
+    "Fantastic job! 🙌",
+    "So proud of you! 🎊",
+    "Excellent execution! 👌",
+    "Rockstar performance! 🤘",
+    "That’s how it’s done! 🧨",
+    "Legendary stuff! 🏅",
+    "You nailed it! 🔨",
+    "You crushed it! 💥",
+    "Bravo! 👏",
+    "You’re on fire! 🔥",
+    "100% Approved! ✅",
+    "Keep being amazing! 💫"
+]
+
 
 @app.route('/')
 def home():
@@ -78,9 +104,11 @@ def webhook():
                 print(f"Sent Telegram notification for 'In Approval' transition for {issue_identifier}.")
 
             if (new_state_name == 'Done'):
+                random_appreciation = random.choice(APPRECIATION_PHRASES)
+
                 telegram_message = (
                     f"🎉 งาน <b>{issue_title} ({issue_identifier})</b> ของ {assignee_name} ถูก <b>Approved</b> เป็นเรียบร้อยแล้ว!\n"
-                    "เยี่ยมมากกกก! ✨"
+                    f"{random_appreciation}"
                 )
                 telegram_message += project_text
 

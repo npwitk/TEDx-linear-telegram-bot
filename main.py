@@ -38,7 +38,6 @@ APPRECIATION_PHRASES = [
     "Keep being amazing! 💫"
 ]
 
-
 @app.route('/')
 def home():
     return "TEDx Linear Telegram Bot is running kub!! 3+3=6"
@@ -49,8 +48,13 @@ def webhook():
         data = request.json
         print(f"Received Linear webhook: {data}")
 
-        if data.get('type') == 'Issue' and data.get('action') == 'update':
+        if data.get('type') == 'Issue' and data.get('action') in ['update', 'create']:
             issue_data = data.get('data', {})
+
+            labels = issue_data.get('labels', [])
+            if any(label.get('name') == 'Special' for label in labels):
+                print(f"Issue {issue_data.get('identifier', 'N/A')} has 'Special' tag — skipping Telegram notification.")
+                return jsonify({"status": "ignored_special"}), 200
 
             project_text = ""
             project_name = None
@@ -95,7 +99,7 @@ def webhook():
                 send_telegram_message(telegram_message, linear_issue_url, GOOGLE_SHEET_URL, GOOGLE_DRIVE_URL, include_inline_keyboard=True)
                 print(f"Sent Telegram notification for 'In Approval' transition for {issue_identifier}.")
 
-            if (new_state_name == 'Done'):
+            if new_state_name == 'Done':
                 random_appreciation = random.choice(APPRECIATION_PHRASES)
 
                 telegram_message = (
@@ -109,7 +113,6 @@ def webhook():
 
         return jsonify({"status": "success"}), 200
     return jsonify({"status": "method not allowed"}), 405
-
 
 def send_telegram_message(message, linear_url, content_sheet_url, google_drive_url, include_inline_keyboard=True):
     url = f"https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage"
